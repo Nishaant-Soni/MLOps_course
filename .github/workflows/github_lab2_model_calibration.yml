@@ -57,8 +57,8 @@ jobs:
 
     - name: Commit and Push Changes
       run: |
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git config user.name "github-actions[bot]"
+        git config user.email "12345678+Nishaant-Soni@users.noreply.github.com"
+        git config user.name "Nishaant-Soni"
         git add Labs/Github_Labs/Lab2/metrics/$metrics_filename Labs/Github_Labs/Lab2/models/$model_filename
         git commit -m "Add metrics and updated model"
         git push
