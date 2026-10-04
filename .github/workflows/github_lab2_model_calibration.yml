@@ -1,7 +1,8 @@
-name: Manual Model Retraining - Github Lab 2
+name: Periodic Model Calibration - Github Lab 2
 
 on:
-  workflow_dispatch:  # manual only: run from the Actions tab or `gh workflow run`
+  schedule:
+     - cron: '0 0 * * *' 
 
 jobs:
   retrain:

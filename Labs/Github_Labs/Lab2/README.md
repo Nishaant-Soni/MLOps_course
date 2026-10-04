@@ -67,7 +67,7 @@ The workflow consists of the following steps:
 Two workflows in `.github/workflows/` run this pipeline (copies live in `workflows/`):
 
 - **`github_lab2_model_calibration_on_push.yml`** runs on every push to `main`. It installs the requirements, runs `train_model.py` and `evaluate_model.py` with a shared timestamp, moves the model to `models/` and the metrics JSON to `metrics/`, and commits both back to the repository.
-- **`github_lab2_model_calibration.yml`** runs the same steps, but only when started manually (Actions tab, or `gh workflow run github_lab2_model_calibration.yml`). It has no schedule, to avoid a new model commit every night.
+- **`github_lab2_model_calibration.yml`** runs the same steps on a schedule (daily at 00:00 UTC) so the model is periodically retrained.
 
 Note that, despite the file names, neither workflow applies probability calibration (Platt scaling / isotonic regression); both retrain and re-evaluate the model.
 
