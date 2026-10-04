@@ -55,9 +55,8 @@ jobs:
 
     - name: Commit and Push Changes
       run: |
-        git config --global user.email "26876927+raminmohammadi@users.noreply.github.com"
-        git config --global user.name "raminmohammadi"
-        metrics_filename="Labs/Github_Labs/Lab2/metrics/${timestamp}_metrics.json"
+        git config user.email "123359181+Nishaant-Soni@users.noreply.github.com"
+        git config user.name "Nishaant-Soni"
         model_filename="Labs/Github_Labs/Lab2/models/model_${timestamp}_gb_model.joblib"
         git add -f "$metrics_filename" "$model_filename"
         # Commit only if there are changes
