@@ -1,8 +1,8 @@
 name: Periodic Model Calibration - Github Lab 2
 
 on:
-  schedule:
-     - cron: '0 0 * * *' 
+
+    workflow_dispatch:  # manual only: run from the Actions tab or `gh workflow run`
 
 jobs:
   retrain:

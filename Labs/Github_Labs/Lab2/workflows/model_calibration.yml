@@ -1,8 +1,7 @@
 name: Periodic Model Calibration
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  #minutes, hours, day, month, day of week
+    workflow_dispatch:  # manual only: run from the Actions tab or `gh workflow run`
 
 jobs:
   retrain:
