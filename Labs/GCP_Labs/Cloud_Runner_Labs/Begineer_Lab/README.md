@@ -33,9 +33,11 @@ Use `python3` as written below; on Windows the command is usually `python`. Star
 
 ```bash
 docker --version
-docker info          # must print server details, not "Cannot connect to the Docker daemon"
+docker info
 gcloud --version
 ```
+
+`docker info` must print server details. If it prints "Cannot connect to the Docker daemon", Docker Desktop is not running yet.
 
 ## 2. Get the code
 
@@ -46,6 +48,14 @@ cd MLOps_course/Labs/GCP_Labs/Cloud_Runner_Labs/Begineer_Lab
 
 ## 3. Test locally first (no Google Cloud needed)
 
+If you ran this step before, remove the old container first (this prints an error you can ignore if none exists):
+
+```bash
+docker rm -f hw-test
+```
+
+Build and start the container:
+
 ```bash
 docker build -t hello-world-local .
 docker run -d --name hw-test \
@@ -53,30 +63,44 @@ docker run -d --name hw-test \
   -p 9090:9090 hello-world-local
 ```
 
-Using `PORT=9090` (not 8080) confirms the container honors the `PORT` variable Cloud Run injects. No `--platform` flag is needed locally: the Dockerfile is OS- and CPU-agnostic and builds natively on Intel/AMD or ARM (Apple Silicon) machines, on macOS, Linux and Windows.
+Confirm it is running before continuing:
 
 ```bash
-curl localhost:9090/          # Hello from my container
-curl localhost:9090/health    # {"status":"ok"}
-curl localhost:9090/info      # {"greeting":"...","instance_id":"fb6590c7","revision":"local","service":"local"}
+docker ps
+```
+
+`hw-test` must show `Up` and `0.0.0.0:9090->9090/tcp` in the PORTS column. If it is missing, run `docker logs hw-test` to see why (or `docker ps -a` to see whether it exited).
+
+Wait about 3 seconds after it shows `Up` so the server finishes starting. Commands run in the first second return `Connection reset by peer`; if you see that, just wait a moment and run them again.
+
+Using `PORT=9090` (not 8080) confirms the container honors the `PORT` variable Cloud Run injects. No `--platform` flag is needed locally: the Dockerfile is OS- and CPU-agnostic and builds natively on Intel/AMD or ARM (Apple Silicon) machines, on macOS, Linux and Windows.
+
+Run each command below (they contain no inline comments, so they can be pasted into bash or zsh as-is):
+
+```bash
+curl localhost:9090/
+curl localhost:9090/health
+curl localhost:9090/info
 python3 loadtest.py http://localhost:9090 --requests 40 --concurrency 20 --delay-ms 200
-docker logs hw-test           # one JSON log line per request
-docker exec hw-test id        # uid=1000(appuser), not root
-docker rm -f hw-test          # clean up
+docker logs hw-test
+docker exec hw-test id
+docker rm -f hw-test
 ```
 
 **A successful local run looks like:**
-- `/` returns your greeting, `/health` returns `{"status":"ok"}`.
-- `/info` returns JSON with an 8-character `instance_id`.
+- `/` returns `Hello from my container`, `/health` returns `{"status":"ok"}`.
+- `/info` returns JSON such as `{"greeting":"Hello from my container","instance_id":"fb6590c7","revision":"local","service":"local"}`, with an 8-character `instance_id`.
 - The load test prints `0 errors` and `Distinct instances that answered: 1` (locally there is only one container).
-- Logs are JSON lines such as `{"severity": "INFO", "message": "request handled", "path": "/info", "status": 200, "latency_ms": 201.72, ...}`.
-- `id` shows `appuser`.
+- `docker logs hw-test` starts with a few plain-text gunicorn startup lines, followed by one JSON line per request, such as `{"severity": "INFO", "message": "request handled", "path": "/info", "status": 200, "latency_ms": 201.72, ...}`.
+- `docker exec hw-test id` shows `uid=1000(appuser)`, not root.
+- The last command removes the container (clean up).
 
 ## 4. Deploy to Cloud Run
 
-1. Log in (opens a browser):
+1. Log in (opens a browser), then confirm your account is listed as active:
    ```bash
    gcloud auth login
+   gcloud auth list
    ```
 2. Create a Google Cloud project in the [console](https://console.cloud.google.com/) and link a billing account to it (required to enable Cloud Run and Artifact Registry). Note its **project ID** (not the display name).
 3. Deploy:
@@ -104,13 +128,20 @@ Try:      curl https://hello-world-xxxxxxxx-ue.a.run.app/health
 
 ## 5. Verify and observe autoscaling
 
+Set `URL` to the address printed by `deploy.sh` (replace the placeholder below with your own):
+
 ```bash
-URL=https://hello-world-xxxxxxxx-ue.a.run.app   # the URL printed by deploy.sh
-curl $URL/                # Hello from Cloud Run!
-curl $URL/health          # {"status":"ok"}
-curl $URL/info            # real service and revision names from Cloud Run
+URL=https://hello-world-xxxxxxxx-ue.a.run.app
+```
+
+```bash
+curl $URL/
+curl $URL/health
+curl $URL/info
 python3 loadtest.py $URL --requests 200 --concurrency 25 --delay-ms 500 --insecure
 ```
+
+Expected: `/` returns `Hello from Cloud Run!`, `/health` returns `{"status":"ok"}`, and `/info` returns the real service and revision names from Cloud Run.
 
 `--insecure` skips TLS certificate verification. It is included because many Python installs (for example python.org builds on macOS) ship without root certificates and would otherwise fail with `CERTIFICATE_VERIFY_FAILED` even though `curl` works. It is acceptable here because you are only calling your own throwaway demo service. If you prefer verification, drop the flag and see the note below.
 

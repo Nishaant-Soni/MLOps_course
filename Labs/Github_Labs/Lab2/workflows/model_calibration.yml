@@ -1,7 +1,7 @@
 name: Periodic Model Calibration
 
 on:
-    workflow_dispatch:  # manual only: run from the Actions tab or `gh workflow run`
+  workflow_dispatch:  # manual only: run from the Actions tab or `gh workflow run`
 
 jobs:
   retrain:
