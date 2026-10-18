@@ -15,6 +15,7 @@ This version modernizes the original lab: a hardened production Dockerfile, a Cl
 | `deploy.sh` | Creates the registry repo, builds, pushes and deploys with scaling flags |
 | `loadtest.py` | Concurrent requests against `/info`; counts distinct instances |
 | `cleanup.sh` | Deletes the service and registry repo to stop charges |
+| `screenshots/` | Evidence from my real Cloud Run deployment (see [Evidence](#evidence-from-my-deployment)) |
 
 ## 1. What to install
 
@@ -148,11 +149,11 @@ Expected: `/` returns `Hello from Cloud Run!`, `/health` returns `{"status":"ok"
 With `CONCURRENCY=10`, 25 simultaneous slow requests cannot fit on one instance, so Cloud Run starts more. Real output from my deployment:
 
 ```
-200 requests in 6.9s (28.8 req/s), 0 errors
+200 requests in 7.4s (26.9 req/s), 0 errors
 Distinct instances that answered: 3
-  b9402b13: 102 requests
-  b5e700d0: 69 requests
-  3fa84324: 29 requests
+  f3895fa5: 102 requests
+  faeabeb4: 68 requests
+  f7538ea8: 30 requests
 ```
 
 More than one distinct instance means Cloud Run scaled out (never more than `MAX_INSTANCES`, which is 3 here). Exact numbers vary.
@@ -192,6 +193,21 @@ The original lab used `python:3.8-slim`, the Flask development server, the depre
    - It tags each image with a timestamp, and `cleanup.sh` removes the resources.
 4. **Autoscaling demo**
    - `loadtest.py` sends concurrent requests and counts the distinct `instance_id`s that answered. This gives visible evidence that Cloud Run scaled out, where the original lab only said "look at the console."
+
+### Evidence from my deployment
+
+I deployed this lab to Cloud Run in `us-east1` and ran Sections 4 and 5 against it. Screenshots are in [`screenshots/`](screenshots/).
+
+**Load test:** 200 requests at concurrency 25 completed with 0 errors, answered by 3 distinct instances (the `MAX_INSTANCES` cap).
+
+![Load test results](screenshots/Loadtest_results.png)
+
+**GCP Cloud Run metrics:** the container instance count reached 3 during the load test, and the request count chart shows the traffic.
+
+![Container instance count](screenshots/Container%20instance%20count.png)
+![Request count](screenshots/Request%20count.png)
+
+**Live demo:** to avoid ongoing cloud charges, I am not leaving the service running. **If you would like to see it live, let me know and I will deploy it for you**, or reproduce it yourself by following Sections 3 to 6.
 
 ## Testing status
 
