@@ -25,10 +25,20 @@ saves the best model plus a `metrics.json` report to a mounted directory.
 
 - Docker Desktop (macOS/Windows) or Docker Engine (Linux), running
   (`docker info` should show a `Server` section)
+- Git, for cloning the repository
+
+No local Python install is needed. Everything runs inside the container.
+
+## Get the lab
+
+```sh
+git clone https://github.com/Nishaant-Soni/MLOps_course.git
+cd MLOps_course/Labs/Docker_Labs/Lab1
+```
+
+All of the commands below run from this directory.
 
 ## Build
-
-From this directory (`Labs/Docker_Labs/Lab1`):
 
 ```sh
 docker build -t wine-training:1.0 .
