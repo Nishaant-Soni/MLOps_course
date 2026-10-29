@@ -77,6 +77,8 @@ docker run --rm wine-training:1.0 --help
 
 ## Expected output
 
+![Container run output](screenshots/run.png)
+
 ```text
 Wine dataset: 178 samples, 13 features, 3 classes
   logistic_regression  cv_f1=0.993 (+/-0.015)  test_acc=0.972  test_f1=0.971
