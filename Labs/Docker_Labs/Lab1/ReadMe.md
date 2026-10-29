@@ -81,6 +81,47 @@ The model is chosen on cross-validation, not test accuracy. This is why
 Logistic Regression wins even though RandomForest scores higher on the
 36-sample test set.
 
+## Sample results
+
+From `artifacts/metrics.json` after a default run (`test_size=0.2`,
+`random_state=42`):
+
+| Model | CV F1 (mean ± std) | Test accuracy | Test F1 |
+|-------|--------------------|---------------|---------|
+| **logistic_regression** (best) | 0.9927 ± 0.0147 | 0.9722 | 0.9710 |
+| random_forest | 0.9863 ± 0.0274 | 1.0000 | 1.0000 |
+| gradient_boosting | 0.9612 ± 0.0378 | 0.9444 | 0.9453 |
+
+Confusion matrices on the test set (rows = true class, columns = predicted):
+
+| | logistic_regression | random_forest | gradient_boosting |
+|---|---|---|---|
+| class_0 | 12 / 0 / 0 | 12 / 0 / 0 | 12 / 0 / 0 |
+| class_1 | 0 / 14 / 0 | 0 / 14 / 0 | 1 / 13 / 0 |
+| class_2 | 0 / 1 / 9 | 0 / 0 / 10 | 0 / 1 / 9 |
+
+The file looks like this (shortened to one model):
+
+```json
+{
+  "dataset": "sklearn wine",
+  "trained_at": "2026-10-29T18:53:50+00:00",
+  "test_size": 0.2,
+  "random_state": 42,
+  "class_names": ["class_0", "class_1", "class_2"],
+  "best_model": "logistic_regression",
+  "results": {
+    "logistic_regression": {
+      "cv_f1_macro_mean": 0.9927,
+      "cv_f1_macro_std": 0.0147,
+      "test_accuracy": 0.9722,
+      "test_f1_macro": 0.971,
+      "confusion_matrix": [[12, 0, 0], [0, 14, 0], [0, 1, 9]]
+    }
+  }
+}
+```
+
 ## Save the image as a tarball (optional)
 
 ```sh
