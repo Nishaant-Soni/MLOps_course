@@ -1,5 +1,5 @@
-# Use a slim official Python runtime as the parent image
-FROM python:3.11-slim
+# Use a slim official Python runtime, pinned to a patch release so rebuilds match
+FROM python:3.11.18-slim
 
 LABEL maintainer="Nishaant Soni" \
       description="Trains and compares classifiers on the scikit-learn Wine dataset"
