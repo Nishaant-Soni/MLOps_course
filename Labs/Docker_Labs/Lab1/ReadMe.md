@@ -36,8 +36,8 @@ Running the lab creates an `artifacts/` folder holding `wine_model.joblib` and
 | Output | Saved inside the container and lost on exit | Written to `/app/artifacts`, kept on the host through a bind mount | The trained model survives after the container is removed |
 | Base image | `python:3.10` (full) | `python:3.11.18-slim` | Smaller image; the exact patch tag means rebuilds use the same Python |
 | Dependencies | Unpinned | Exact versions in `requirements.txt` | Every build installs the same package versions |
-| Layer caching | `COPY src/` before `pip install` | `requirements.txt` copied and installed before the code | Editing `main.py` no longer reinstalls every package on rebuild |
-| Security | Runs as root | Runs as non-root `appuser` (UID 10001) | Limits the damage if the process in the container is compromised |
+| Layer caching | `COPY src/` before `pip install` | Dependencies installed and the user created before the code is copied | Editing `main.py` reruns only the final `COPY` step, not `pip install` or user setup |
+| Security | Runs as root | Runs as non-root `appuser` (UID 10001), which can write only to `/app/artifacts`; the code stays owned by root | Limits the damage if the process is compromised: it can't rewrite its own code or anything else in the image |
 | Build context | Everything in the folder | `.dockerignore` excludes `.git`, `artifacts/`, `*.tar`, virtualenvs and caches | Faster builds, and old models or tarballs never get copied into the image |
 | Entrypoint | `CMD ["python", "main.py"]` | `ENTRYPOINT` for the script, `CMD` for default arguments | Arguments after the image name go straight to the script |
 

@@ -14,13 +14,15 @@ WORKDIR /app
 COPY src/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the training script into the container
-COPY src/main.py .
-
-# Run as a non-root user that owns the artifacts directory
+# Create a non-root user that can write only to the artifacts directory.
+# Done before copying the code so editing main.py doesn't rerun this layer.
 RUN useradd --create-home --uid 10001 appuser \
     && mkdir -p /app/artifacts \
-    && chown -R appuser:appuser /app
+    && chown appuser:appuser /app/artifacts
+
+# Copy the training script; it stays owned by root and read-only to appuser
+COPY src/main.py .
+
 USER appuser
 
 # Model and metrics are written here; mount a host directory to keep them
