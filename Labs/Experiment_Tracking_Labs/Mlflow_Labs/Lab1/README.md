@@ -12,28 +12,38 @@ This lab predicts wine quality (score 3–9) from 12 physicochemical features. I
 
 ## 1. What I changed compared to the original lab
 
-The original Lab 1 (`linear_regression.py`, `starter.ipynb`, `serving.ipynb`, `serving.py`) is **kept unchanged for reference**. My work is in three new scripts: `common.py`, `train.py` and `predict.py`.
+"Original lab" below means everything that came in this folder: the course notes (`course_notes.pdf`), `linear_regression.py` / `.ipynb`, `starter.ipynb`, `serving.ipynb` and `serving.py`. Those files are **kept unchanged for reference**. My work is in three new scripts: `common.py`, `train.py` and `predict.py`.
+
+**What the original lab covers:** experiments and runs; the storage options (`./mlruns`, SQLite, tracking server); logging params, metrics and a model with `infer_signature`; autologging; comparing ElasticNet, Linear Regression and Random Forest runs in the UI; loading a model from its run path; and serving it with `mlflow models serve`.
+
+**What I added on top:**
+- nested sweeps
+- automated best-run selection with `search_runs`
+- the Model Registry, with versions and an `@champion` alias behind a promotion gate
+- dataset and plot logging
+- loading and serving by alias instead of by run path
+- a separate validation set for model selection
 
 ### Changes to the MLflow workflow (the core of the lab)
 
 | Area | Original lab | My version | Why it matters |
 |---|---|---|---|
-| **Tracking backend** | Default `./mlruns` file store. The code skipped model registration on it (`if tracking_url_type_store != "file"`). | **SQLite backend** (`mlflow.db`) with artifacts in `Lab1/mlruns/`, set up in `common.py`. Artifacts always land in `Lab1/` whichever folder you run from. | The Model Registry and aliases work locally without running a server. |
-| **Experiment organisation** | Everything went into the `Default` experiment, with unnamed runs. | A named experiment (`wine-quality`), descriptive run names (e.g. `random_forest_n_estimators=200_max_depth=12`), and `run_type` / `model_type` / `dataset` tags. | Runs are easy to find, filter and compare in the UI. |
-| **Hyperparameter search** | One run per script call, one model type, with `alpha` / `l1_ratio` passed as positional args. | A **multi-model grid sweep** (20 configs by default: 12 ElasticNet + 4 Random Forest + 4 Gradient Boosting) logged as **nested child runs** under one parent run. `--models` picks which model types to run; `--alphas` / `--l1-ratios` change the ElasticNet grid. | Different model types are compared fairly in one place, on the same data split. |
-| **What gets logged** | 2 params, 3 metrics and the model. | Each child run logs `model_type` and its hyperparameters, `val_rmse` / `val_mae` / `val_r2`, a **residuals plot**, a **feature-weights plot** (coefficients for ElasticNet, importances for the tree models), and the model with a **signature and input example**. The parent run logs the **training dataset** (`mlflow.log_input`), the sweep configuration, the **best `val_rmse` per model type**, the best run ID and model type, and the best model's **held-out test metrics**. | Each run is fully reproducible and can be inspected visually. Model types can be compared at a glance on the parent run. |
-| **Choosing the best model** | Done by hand in the UI. | `mlflow.search_runs(filter_string="tags.mlflow.parentRunId = '<parent>'", order_by=["metrics.val_rmse ASC"])` picks the winner across all model types. | Model selection is automated and uses the tracking server as the source of truth. |
-| **Model Registry** | Registration was skipped on the file store. The original Lab 2 used the deprecated `transition_model_version_stage("Production")`. | Every sweep registers its best model as a new version of `WineQualityModel`, tagged with `val_rmse` and `model_type`. The **`@champion` alias** (the current MLflow API) moves only if the new version has a **lower validation RMSE** than the current champion. This is a **promotion gate**. | A worse retraining run can't silently replace the production model. A better model of a *different type* can replace it. |
-| **Loading and serving** | Loaded by hard-coded paths such as `mlruns/0/<run-id>/artifacts/model`. | Loaded and served by alias: `models:/WineQualityModel@champion`. `predict.py` can load the model directly or call the REST server. | Consumers don't need to know run IDs or model types. Promoting a new champion changes what gets served. |
-| **MLflow version** | Unpinned, using MLflow 2-era APIs. | Pinned to **MLflow 3.18.0**. Uses MLflow 3 logged-model URIs (`models:/m-...`) for registration, and passes `skops_trusted_types` for tree models (see note below). | Installs the same way every time and uses the current APIs. |
+| **Tracking backend** | The notes describe SQLite as one of three storage options (a one-line `set_tracking_uri('sqlite:///mlflow.db')` example), but every script and notebook uses the default `./mlruns` file store. `linear_regression.py` therefore skips registration (`if tracking_url_type_store != "file"`). | The scripts **run on the SQLite backend** (`mlflow.db`), with artifacts pinned to `Lab1/mlruns/` (set up in `common.py`), so artifacts always land in `Lab1/` whichever folder you run from. | This puts the notes' SQLite option into practice. It's what makes the Model Registry and aliases work locally without a separate server. |
+| **Experiment organisation** | Runs go into the `Default` experiment. The notes show descriptive `run_name`s, and renaming experiment `0` to the current date with `MlflowClient.rename_experiment`. No tags are used. | A dedicated named experiment (`wine-quality`), created by the script with a fixed artifact location. Descriptive run names (e.g. `random_forest_n_estimators=200_max_depth=12`), plus `run_type` / `model_type` / `dataset` tags on every run. | Runs can be filtered in the UI and in `search_runs`, for example `tags.model_type = "random_forest"`. |
+| **Hyperparameter search** | The notes loop over a small ElasticNet grid (2×2) and two Random Forest settings, logging every config as a **separate top-level run**. `linear_regression.py` trains one config per call, using positional args. | One command runs a **multi-model grid sweep** (20 configs by default: 12 ElasticNet + 4 Random Forest + 4 Gradient Boosting). Every config is a **nested child run** under a single `model-sweep` parent run. `--models`, `--alphas` and `--l1-ratios` control the sweep. | Each sweep is grouped under its own parent run, so repeated sweeps don't mix together. Every model type is compared on the same split. |
+| **What gets logged** | Params, `rmse` / `mae` / `r2` and the model with an inferred signature. `starter.ipynb` also shows `mlflow.autolog()`. | Each child run logs `model_type` and its hyperparameters, `val_rmse` / `val_mae` / `val_r2`, a **residuals plot** and a **feature-weights plot** (`mlflow.log_figure`), and the model with a **signature and an input example**. The parent run logs the **training dataset** (`mlflow.log_input`), the sweep configuration, the **best `val_rmse` per model type**, the best run ID and model type, and the best model's **held-out test metrics**. | Each run can be inspected visually and reproduced. Model types can be compared at a glance on the parent run. |
+| **Choosing the best model** | Done by eye, by comparing runs in the UI. | Done in code: `mlflow.search_runs(filter_string="tags.mlflow.parentRunId = '<parent>'", order_by=["metrics.val_rmse ASC"])` picks the winner across all model types. | Selection is automated and uses the tracking store as the source of truth. |
+| **Model Registry** | The notes explain that `registered_model_name` registers a model for versioning, but in the code it sits in a branch that never runs on the file store. Model versions, stages and aliases are never actually demonstrated. (The original Lab 2 uses the deprecated `transition_model_version_stage("Production")`.) | Every sweep registers its best model as a new version of `WineQualityModel`, tagged with `val_rmse` and `model_type`. The **`@champion` alias** (the current MLflow API) moves only if the new version has a **lower validation RMSE** than the current champion. This is a **promotion gate**. | A worse retraining run can't silently replace the production model. A better model of a *different type* can replace it. |
+| **Loading and serving** | The model is loaded and served by a hard-coded run path, e.g. `mlruns/0/<run-id>/artifacts/model`, which has to be copied from the UI by hand. | Loaded and served by alias: `models:/WineQualityModel@champion`. `predict.py` can load the model directly or call the REST server. | Consumers don't need run IDs or model types. Promoting a new champion changes what gets served. |
+| **MLflow version** | Unpinned (the notes' screenshots show MLflow 2.7.1), using MLflow 2-era APIs (`log_model(model, "model")`). | Pinned to **MLflow 3.18.0**. Uses MLflow 3 `log_model(name=...)` and logged-model URIs (`models:/m-...`) for registration, and passes `skops_trusted_types` for tree models (see note below). | Installs the same way every time and uses the current APIs. |
 
 ### Changes to the data and models
 
 | Area | Original lab | My version |
 |---|---|---|
-| **Models** | ElasticNet only. | ElasticNet (inside a `StandardScaler` pipeline), `RandomForestRegressor` and `GradientBoostingRegressor`, all from scikit-learn. |
+| **Models** | ElasticNet in the main script. The notes add Linear Regression and Random Forest examples; `starter.ipynb` uses Random Forest on the diabetes dataset. | ElasticNet (now inside a `StandardScaler` pipeline), Random Forest and **Gradient Boosting (new)**, all trained from one script and compared in the same sweep. |
 | **Data** | Red wine only (1,599 rows), downloaded from GitHub on every run. | **Red + white wine combined** (6,497 rows) with an `is_red` indicator, read from local `data/` (no internet needed). The CSVs and the red + white idea come from the original Lab 2 (`Lab2/data`). It's new to Lab 1, but not my own dataset. |
-| **Split** | Random 75/25 split. | Seeded **60/20/20 train/validation/test** split. Models are chosen on validation; test is used once, for the final score. |
+| **Split** | 75/25 train/test split with no validation set, so runs are compared on the test set. | Seeded **60/20/20 train/validation/test** split. Models are chosen on validation; test is used once, for the final score. |
 
 > **Note on `skops_trusted_types`:** MLflow 3 saves scikit-learn models in the safer `skops` format by default. `skops` refuses to save tree models unless the tree's internal type (`sklearn.tree._tree.Tree`) is explicitly trusted, because a malicious model file could abuse it. We trained these trees ourselves in the same run, so `train.py` trusts that one type, and only for the tree models.
 
@@ -280,6 +290,7 @@ Lab1/
 ├── requirements.txt     # pinned versions for the new scripts
 ├── .gitignore           # ignores mlflow.db, mlruns/, .venv/
 │
+├── course_notes.pdf                # original lab documentation (the "original lab" compared in section 1)
 ├── linear_regression.py / .ipynb   # original lab files, kept for reference only
 ├── starter.ipynb, serving.ipynb, serving.py
 └── tracking-basics.png, autologging-intro.png
