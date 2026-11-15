@@ -45,7 +45,7 @@ You only need **Python** and **Git**. Everything else is installed by `pip` in s
 
 | Tool | Version | Check with |
 |---|---|---|
-| Python | **3.12** (tested with 3.12.6; 3.10–3.12 should also work) | `python3 --version` (macOS/Linux) or `py --version` (Windows) |
+| Python | **3.12 or newer** (required by `numpy==2.5.4`; tested with 3.12.6) | `python3.12 --version` (macOS/Linux) or `py -3.12 --version` (Windows) |
 | Git | any recent version | `git --version` |
 
 **Installing Python 3.12**
@@ -78,8 +78,9 @@ git clone https://github.com/Nishaant-Soni/MLOps_course.git
 cd MLOps_course/Labs/Experiment_Tracking_Labs/Mlflow_Labs/Lab1
 
 # 2. Create and activate a virtual environment
-python3 -m venv .venv               # Windows: py -3.12 -m venv .venv
+python3.12 -m venv .venv            # Windows: py -3.12 -m venv .venv
 source .venv/bin/activate           # Windows: .venv\Scripts\Activate.ps1
+python --version                    # must print Python 3.12.x (or newer)
 
 # 3. Install the dependencies
 pip install --upgrade pip
@@ -290,7 +291,8 @@ The original notebooks and `serving.py` are not part of this submission. `servin
 
 | Problem | Fix |
 |---|---|
-| `python3: command not found` / `py` not found | Python isn't installed or isn't on your PATH. See section 2. |
+| `python3.12: command not found` / `py` not found | Python 3.12 isn't installed or isn't on your PATH. See section 2. (Plain `python3` on macOS is often an older version, e.g. 3.9, which can't install these packages.) |
+| `ERROR: No matching distribution found for ...` (e.g. `numpy==2.5.4` or `pandas==3.1.1`) during `pip install` | The venv was created with Python older than 3.12. Delete `.venv` and recreate it with `python3.12 -m venv .venv`. |
 | `ModuleNotFoundError: No module named 'mlflow'` | The virtual environment isn't active. Run `source .venv/bin/activate` (Windows: `.venv\Scripts\Activate.ps1`). |
 | `RESOURCE_DOES_NOT_EXIST: Registered Model with name=WineQualityModel not found` | Run `python train.py` first. For `mlflow models serve`, check that `MLFLOW_TRACKING_URI` is set and that you're in the `Lab1` folder. |
 | `Address already in use` | Another process is using the port. Pick a different one (e.g. `-p 5002`) and use it in `--url` too. On macOS, port 5000 is used by AirPlay, which is why this guide uses 5050 and 5001. |
