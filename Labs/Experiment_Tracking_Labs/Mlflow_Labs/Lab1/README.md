@@ -223,9 +223,11 @@ mlflow models serve -m "models:/WineQualityModel@champion" --env-manager local -
 
 When it's ready, it prints `Uvicorn running on http://127.0.0.1:5001`.
 
-**Terminal 2 (`cd` into `Lab1`, activate the venv again, then send a request):**
+**Terminal 2 (open a new terminal window, go to the `Lab1` folder, activate the venv, then send a request):**
 
 ```bash
+cd <path-where-you-cloned>/MLOps_course/Labs/Experiment_Tracking_Labs/Mlflow_Labs/Lab1
+source .venv/bin/activate           # Windows: .venv\Scripts\Activate.ps1
 python predict.py --url http://127.0.0.1:5001/invocations
 ```
 
